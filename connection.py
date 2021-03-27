@@ -20,14 +20,6 @@ class Connection(threading.Thread):
         packet_id = random.randbytes(2)
         packet_state = b'\x00'
 
-        # 0: from client to server step 0 (only client)
-        # 1: from client to server step 1 (client and server)
-        # 2: from client to server step 2 (only server)
-
-        # 3: from server to client step 0 (only server)
-        # 4: from server to client step 1 (client and server)
-        # 5: from server to client step 2 (only client)
-
         data = packet_state + packet_id + xor_bytes(data, packet_key)
 
         self.active_packets[packet_id] = packet_key
