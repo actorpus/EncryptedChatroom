@@ -1,38 +1,24 @@
-import socket
 import threading
+import socket
 import random
 
 
 xor_bytes = lambda a, b: b''.join([(x[0] ^ x[1]).to_bytes(1, "big") for x in zip(a, b)])
 
 
-IP = ""
-PORT = 3952
-
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.bind((IP, PORT))
-sock.listen(4)
-
-lock = threading.Lock()
-servers = []
-
-
 class Connection(threading.Thread):
-    def __init__(self, addresses):
+    def __init__(self, address):
         super().__init__()
-        self.sock: socket.socket = addresses[0]
-        self.address: tuple[str, int] = addresses[1]
+
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect(address)
 
         self.active_packets = {}
-
-        lock.acquire()
-        servers.append(self)
-        lock.release()
 
     def send(self, data: bytes):
         packet_key = random.randbytes(len(data))
         packet_id = random.randbytes(2)
-        packet_state = b'\x03'
+        packet_state = b'\x00'
 
         # 0: from client to server step 0 (only client)
         # 1: from client to server step 1 (client and server)
@@ -53,17 +39,26 @@ class Connection(threading.Thread):
         packet_id = data[1:3]
         data = data[3:]
 
-        if packet_state == 0:
+        if packet_state == 1:
+            packet_key = self.active_packets[packet_id]
+
+            data = xor_bytes(data, packet_key)
+
+            data = b'\x02' + packet_id + data
+
+            self.sock.send(data)
+
+        elif packet_state == 3:
             packet_key = random.randbytes(len(data))
 
             data = xor_bytes(data, packet_key)
             self.active_packets[packet_id] = packet_key
 
-            data = b'\x01' + packet_id + data
+            data = b'\x04' + packet_id + data
 
             self.sock.send(data)
 
-        elif packet_state == 2:
+        elif packet_state == 5:
             packet_key = self.active_packets[packet_id]
 
             data = xor_bytes(data, packet_key)
@@ -72,16 +67,7 @@ class Connection(threading.Thread):
 
             return data
 
-        elif packet_state == 4:
-            packet_key = self.active_packets[packet_id]
-
-            data = xor_bytes(data, packet_key)
-
-            data = b'\x05' + packet_id + data
-
-            self.sock.send(data)
-
-    def run(self):
+    def run(self) -> None:
         while True:
             try:
                 data = self.sock.recv(1024)
@@ -90,16 +76,21 @@ class Connection(threading.Thread):
                 if message is not None:
                     print(message)
 
-                    self.send(message)
-
             except ConnectionError as e:
                 print(e)
                 break
 
-        lock.acquire()
-        servers.remove(self)
-        lock.release()
 
-while True:
-    con = sock.accept()
-    Connection(con).start()
+server = Connection(("127.0.0.1", 3952))
+server.start()
+
+running = True
+
+while running:
+    client_input = input()
+
+    if server.is_alive():
+        server.send(client_input.encode())
+
+    else:
+        running = False
