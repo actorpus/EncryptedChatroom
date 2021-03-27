@@ -111,6 +111,9 @@ class Connection:
                             os._exit(0)  # ignore error its a hidden function
                             # also don't use this ever ;)
 
+                    elif data["type"] == "authentication confirmation":
+                        print("\033[34mClient authenticated\033[0m")
+
             except ConnectionError as e:
                 print(e)
                 break

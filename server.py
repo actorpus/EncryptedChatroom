@@ -96,9 +96,7 @@ class Connection(threading.Thread):
                                 self.authenticated = True
 
                                 self.send(pickle.dumps({
-                                    "type": "message",
-                                    "emphasis": "CONFIRMATION",
-                                    "content": "Client authenticated"
+                                    "type": "authentication confirmation"
                                 }))
                             else:
                                 self.send(pickle.dumps({
