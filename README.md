@@ -1,5 +1,5 @@
 # EncriptedChatroom
-a variation on PyNet that intergrates encription into the communication 
+A variation on PyNet that intergrates encryption into the communication 
 
 ## communication states
 
