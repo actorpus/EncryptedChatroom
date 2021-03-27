@@ -1,10 +1,13 @@
 import socket
 import threading
 import random
-
+import json
+import pickle
+import hashlib
+import time
 
 xor_bytes = lambda a, b: b''.join([(x[0] ^ x[1]).to_bytes(1, "big") for x in zip(a, b)])
-
+sha_hash = lambda data: hashlib.sha256(data.encode()).hexdigest()
 
 IP = ""
 PORT = 3952
@@ -14,7 +17,10 @@ sock.bind((IP, PORT))
 sock.listen(4)
 
 lock = threading.Lock()
-servers = []
+connections = []
+
+with open("users.json", "r") as f:
+    accounts: dict = json.load(f)
 
 
 class Connection(threading.Thread):
@@ -23,10 +29,12 @@ class Connection(threading.Thread):
         self.sock: socket.socket = addresses[0]
         self.address: tuple[str, int] = addresses[1]
 
+        self.running = True
         self.active_packets = {}
+        self.authenticated = None
 
         lock.acquire()
-        servers.append(self)
+        connections.append(self)
         lock.release()
 
     def send(self, data: bytes):
@@ -74,23 +82,64 @@ class Connection(threading.Thread):
             self.sock.send(data)
 
     def run(self):
-        while True:
+        while self.running:
             try:
                 data = self.sock.recv(1024)
                 message = self.recv(data)
 
-                if message is not None:
-                    print(message)
+                try:
+                    if message is not None:
+                        data = pickle.loads(message)
 
-                    self.send(message)
+                        if data["type"] == "authenticate":
+                            if data["username"] in accounts.keys() and sha_hash(data["password"]) == accounts[data["username"]]["password"]:
+                                self.authenticated = True
 
-            except ConnectionError as e:
-                print(e)
+                                self.send(pickle.dumps({
+                                    "type": "message",
+                                    "emphasis": "CONFIRMATION",
+                                    "content": "Client authenticated"
+                                }))
+                            else:
+                                self.send(pickle.dumps({
+                                    "type": "message",
+                                    "emphasis": "WARNING",
+                                    "content": "Client authentication failed"
+                                }))
+                                self.send(pickle.dumps({
+                                    "type": "desist from existence"
+                                }))
+
+                        elif data["type"] == "message":
+                            if self.authenticated:
+                                for connection in connections:  # forward message packet to all clients
+                                    if connection is not self:
+                                        connection.send(message)
+
+                            else:
+                                self.send(pickle.dumps({
+                                    "type": "message",
+                                    "emphasis": "WARNING",
+                                    "content": "Client not authenticated"
+                                }))
+                                self.send(pickle.dumps({
+                                    "type": "desist from existence"
+                                }))
+                except KeyError:
+                    self.send(pickle.dumps({
+                        "type": "message",
+                        "emphasis": "WARNING",
+                        "content": "Invalid communication"
+                    }))
+
+            except ConnectionResetError as e:
+                print("ConnectionResetError:", e)
                 break
 
         lock.acquire()
-        servers.remove(self)
+        connections.remove(self)
         lock.release()
+
 
 while True:
     con = sock.accept()
