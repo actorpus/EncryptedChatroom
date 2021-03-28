@@ -3,10 +3,38 @@ import socket
 import random
 import pickle
 import os
+import msvcrt
 
 
 encrypt = lambda a, b: b''.join([((x[0] + x[1]) % 255).to_bytes(1, "big") for x in zip(a, b)])
 decrypt = lambda a, b: b''.join([((x[0] - x[1]) % 255).to_bytes(1, "big") for x in zip(a, b)])
+default = lambda i, d: i if i else d
+
+
+MESSAGE = 0
+DESIST_FROM_EXISTENCE = 1
+AUTHENTICATE = 2
+AUTHENTICATION_CONFIRMATION = 3
+UPDATE_PROFILE = 4
+
+
+def silent_input(*args, fill="", end="\n"):
+    print(*args, end="", flush=True)
+
+    static = ''
+    while True:
+        x = msvcrt.getch()
+
+        if x == b'\r':
+            print(end=end)
+            return static
+
+        elif x == b'\x08':
+            static = static[:-1]
+
+        else:
+            static += x.decode()
+            print(fill, end="", flush=True)
 
 
 class Connection:
@@ -14,7 +42,12 @@ class Connection:
         self.ignore_desist_from_existence = ignore_desist_from_existence
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect(address)
+
+        try:
+            self.sock.connect(address)
+        except ConnectionRefusedError:
+            print("could not connect to server %s:%s" % address)
+            return
 
         self.credentials = credentials
 
@@ -34,10 +67,18 @@ class Connection:
                         exec(inp[1:])
                     except Exception as e:
                         print(e)
+                elif inp[0] == "/":
+                    if inp[:9] == "/username":
+                        if inp[10:]:
+                            self.send(
+                                type=UPDATE_PROFILE,
+                                display=inp[10:]
+                            )
+
                 else:
                     self.send(
-                        type="message",
-                        emphasis=None,  # used for formats
+                        type=MESSAGE,
+                        emphasis=None,  # used for formats (normally disallowed for clients)
                         content=inp
                     )
 
@@ -97,7 +138,7 @@ class Connection:
 
     def run(self) -> None:
         self.send(
-            type="authenticate",
+            type=AUTHENTICATE,
             username=self.credentials[0],
             password=self.credentials[1]
         )
@@ -110,7 +151,7 @@ class Connection:
                 if message is not None:
                     data = pickle.loads(message)
 
-                    if data["type"] == "message":
+                    if data["type"] == MESSAGE:
                         if data["emphasis"] is None:
                             print(data["username"] + " > " + data["content"])
 
@@ -120,11 +161,11 @@ class Connection:
                         elif data["emphasis"] == "CONFIRMATION":
                             print("\033[34mCONFIRMATION: %s\033[0m" % data["content"])
 
-                    elif data["type"] == "desist from existence":
+                    elif data["type"] == DESIST_FROM_EXISTENCE:
                         if not self.ignore_desist_from_existence:
                             self.forcefully_exit()
 
-                    elif data["type"] == "authentication confirmation":
+                    elif data["type"] == AUTHENTICATION_CONFIRMATION:
                         print("\033[34mClient authenticated\033[0m")
 
             except KeyboardInterrupt:
@@ -138,7 +179,9 @@ class Connection:
 os.system("color 4")  # initialise colour
 print("\033[0m", end="")  # reset color
 
+ip_address = default(input("ip address > "), "127.0.0.1")
+port = int(default(input("port > "), 3952))
 username = input("username > ")
-password = input("password > ")
+password = [silent_input, input]["PYTHONUNBUFFERED" in os.environ.keys()]("password > ")
 
-server = Connection(("127.0.0.1", 3952), (username, password))
+server = Connection((ip_address, port), (username, password))

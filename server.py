@@ -20,6 +20,13 @@ sock.listen(4)
 lock = threading.Lock()
 connections = []
 
+MESSAGE = 0
+DESIST_FROM_EXISTENCE = 1
+AUTHENTICATE = 2
+AUTHENTICATION_CONFIRMATION = 3
+UPDATE_PROFILE = 4
+
+
 with open("users.json", "r") as f:
     accounts: dict = json.load(f)
 
@@ -34,7 +41,7 @@ class Connection(threading.Thread):
         self.active_packets = {}
         self.authenticated = None
 
-        self.account = ()
+        self.account = {}
 
         lock.acquire()
         connections.append(self)
@@ -93,55 +100,84 @@ class Connection(threading.Thread):
 
             self.sock.send(data)
 
+    def _command_authenticate(self, data):
+        if data["username"] in accounts.keys() and sha_hash(data["password"]) == accounts[data["username"]]["password"]:
+            self.authenticated = True
+            self.account: dict = accounts[data["username"]]
+            self.account["name"] = data["username"]
+
+            self.send(type=AUTHENTICATION_CONFIRMATION)
+        else:
+            self.send(
+                type=MESSAGE,
+                emphasis="WARNING",
+                content="Client authentication failed"
+            )
+            self.send(type=DESIST_FROM_EXISTENCE)
+
+    def _command_message(self, data):
+        if (data["emphasis"] is not None and self.account["emphasis"]) or data["emphasis"] is None:
+            for connection in connections:  # forward message packet to all clients
+                if connection is not self:
+                    data["username"] = self.account["display"]
+                    connection.send(**data)  # formats the dictionary into kwargs
+        else:
+            self.send(
+                type=MESSAGE,
+                emphasis="WARNING",
+                content="Client not authorised to send emphasis messages."
+            )
+
+    def _update_profile_command(self, data):
+        if "display" in data.keys():
+            self.account["display"] = data["display"]
+            accounts[self.account["name"]]["display"] = data["display"]
+
+            lock.acquire()
+            with open("users.json", "w") as file:
+                json.dump(accounts, file)
+            lock.release()
+
+            self.send(
+                type=MESSAGE,
+                emphasis="CONFIRMATION",
+                content="Display name changed to '%s'" % self.account["display"]
+            )
+
+    def handle_data(self, data):
+        command = data["type"]
+        if command == AUTHENTICATE:
+            self._command_authenticate(data)
+
+        elif self.authenticated:
+            if command == MESSAGE:
+                self._command_message(data)
+
+            elif command == UPDATE_PROFILE:
+                self._update_profile_command(data)
+
+            else:
+                self.send(
+                    type=MESSAGE,
+                    emphasis="WARNING",
+                    content="Invalid communication"
+                )
+
+        else:
+            self.send(
+                type=MESSAGE,
+                emphasis="WARNING",
+                content="Client not authenticated"
+            )
+            self.send(type=DESIST_FROM_EXISTENCE)
+
     def run(self):
         while self.running:
             try:
                 data = self.recv(1024)
 
-                try:
-                    if data is not None:
-                        if data["type"] == "authenticate":
-                            if data["username"] in accounts.keys() and sha_hash(data["password"]) == accounts[data["username"]]["password"]:
-                                self.authenticated = True
-                                self.account = accounts[data["username"]]
-
-                                self.send(type="authentication confirmation")
-                            else:
-                                self.send(
-                                    type="message",
-                                    emphasis="WARNING",
-                                    content="Client authentication failed"
-                                )
-                                self.send(type="desist from existence")
-
-                        elif data["type"] == "message":
-                            if self.authenticated:
-                                if (data["emphasis"] is not None and self.account["emphasis"]) or data["emphasis"] is None:
-                                    for connection in connections:  # forward message packet to all clients
-                                        if connection is not self:
-                                            data["username"] = self.account["display"]
-                                            connection.send(**data)  # formats the dictionary into kwargs
-                                else:
-                                    self.send(
-                                        type="message",
-                                        emphasis="WARNING",
-                                        content="Client not authorised to send emphasis messages."
-                                    )
-
-                            else:
-                                self.send(
-                                    type="message",
-                                    emphasis="WARNING",
-                                    content="Client not authenticated"
-                                )
-                                self.send(type="desist from existence")
-                except KeyError as e:
-                    print("ignoring exception in run(); KeyError:", e)
-                    self.send(
-                        type="message",
-                        emphasis="WARNING",
-                        content="Invalid communication"
-                    )
+                if data is not None:
+                    self.handle_data(data)
 
             except ConnectionResetError:
                 if self.authenticated:
