@@ -4,8 +4,6 @@ import json
 import hashlib
 import security
 
-encrypt = lambda a, b: b''.join([((x[0] + x[1]) % 255).to_bytes(1, "big") for x in zip(a, b)])
-decrypt = lambda a, b: b''.join([((x[0] - x[1]) % 255).to_bytes(1, "big") for x in zip(a, b)])
 sha_hash = lambda data: hashlib.sha256(data.encode()).hexdigest()
 
 IP = ""
@@ -44,6 +42,8 @@ class Connection(threading.Thread):
         lock.acquire()
         connections.append(self)
         lock.release()
+
+        self.start()
 
     def _command_authenticate(self, data):
         if data["username"] in accounts.keys() and sha_hash(data["password"]) == accounts[data["username"]]["password"]:
@@ -138,5 +138,4 @@ class Connection(threading.Thread):
 
 
 while True:
-    con = sock.accept()
-    Connection(con).start()
+    Connection(sock.accept())

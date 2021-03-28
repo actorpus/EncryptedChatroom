@@ -5,11 +5,6 @@ import msvcrt
 import security
 
 
-encrypt = lambda a, b: b''.join([((x[0] + x[1]) % 255).to_bytes(1, "big") for x in zip(a, b)])
-decrypt = lambda a, b: b''.join([((x[0] - x[1]) % 255).to_bytes(1, "big") for x in zip(a, b)])
-default = lambda i, d: i if i else d
-
-
 MESSAGE = 0
 DESIST_FROM_EXISTENCE = 1
 AUTHENTICATE = 2
@@ -44,6 +39,7 @@ class Connection:
 
         try:
             self.sock.connect(address)
+
         except ConnectionRefusedError:
             print("could not connect to server %s:%s" % address)
             return
@@ -124,12 +120,10 @@ class Connection:
                 print("Lost connection to server")
                 self.forcefully_exit()
 
-os.system("color 4")  # initialise colour
+os.system("color 4")  # initialise colour (windows only)
 print("\033[0m", end="")  # reset color
 
-ip_address = default(input("ip address > "), "127.0.0.1")
-port = int(default(input("port > "), 3952))
 username = input("username > ")
 password = [silent_input, input]["PYTHONUNBUFFERED" in os.environ.keys()]("password > ")
 
-server = Connection((ip_address, port), (username, password))
+server = Connection(("127.0.0.1", 3952), (username, password))
