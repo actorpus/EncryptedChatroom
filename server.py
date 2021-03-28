@@ -1,10 +1,8 @@
 import socket
 import threading
-import random
 import json
-import pickle
 import hashlib
-from typing import *
+import security
 
 encrypt = lambda a, b: b''.join([((x[0] + x[1]) % 255).to_bytes(1, "big") for x in zip(a, b)])
 decrypt = lambda a, b: b''.join([((x[0] - x[1]) % 255).to_bytes(1, "big") for x in zip(a, b)])
@@ -38,67 +36,14 @@ class Connection(threading.Thread):
         self.address: tuple[str, int] = addresses[1]
 
         self.running = True
-        self.active_packets = {}
         self.authenticated = None
-
         self.account = {}
+
+        self.communication = security.Communication(self.sock)
 
         lock.acquire()
         connections.append(self)
         lock.release()
-
-    def send(self, **kwargs):
-        data = pickle.dumps(kwargs)
-
-        packet_key = random.randbytes(len(data))
-        packet_id = random.randbytes(2)
-        packet_state = b'\x03'
-
-        data = packet_state + packet_id + encrypt(data, packet_key)
-
-        self.active_packets[packet_id] = packet_key
-
-        self.sock.send(data)
-
-    def recv(self, bufsize) -> Union[None, dict]:
-        data = self.sock.recv(bufsize)
-
-        packet_state = data[0]
-        packet_id = data[1:3]
-        data = data[3:]
-
-        if packet_state == 0:
-            packet_key = random.randbytes(len(data))
-
-            data = encrypt(data, packet_key)
-
-            self.active_packets[packet_id] = packet_key
-
-            data = b'\x01' + packet_id + data
-
-            self.sock.send(data)
-
-        elif packet_state == 2:
-            packet_key = self.active_packets[packet_id]
-
-            data = decrypt(data, packet_key)
-
-            del self.active_packets[packet_id]
-
-            ret: dict = pickle.loads(data)
-
-            return ret
-
-        elif packet_state == 4:
-            packet_key = self.active_packets[packet_id]
-
-            data = decrypt(data, packet_key)
-
-            data = b'\x05' + packet_id + data
-
-            del self.active_packets[packet_id]
-
-            self.sock.send(data)
 
     def _command_authenticate(self, data):
         if data["username"] in accounts.keys() and sha_hash(data["password"]) == accounts[data["username"]]["password"]:
@@ -106,23 +51,23 @@ class Connection(threading.Thread):
             self.account: dict = accounts[data["username"]]
             self.account["name"] = data["username"]
 
-            self.send(type=AUTHENTICATION_CONFIRMATION)
+            self.communication.send(type=AUTHENTICATION_CONFIRMATION)
         else:
-            self.send(
+            self.communication.send(
                 type=MESSAGE,
                 emphasis="WARNING",
                 content="Client authentication failed"
             )
-            self.send(type=DESIST_FROM_EXISTENCE)
+            self.communication.send(type=DESIST_FROM_EXISTENCE)
 
     def _command_message(self, data):
         if (data["emphasis"] is not None and self.account["emphasis"]) or data["emphasis"] is None:
             for connection in connections:  # forward message packet to all clients
                 if connection is not self:
                     data["username"] = self.account["display"]
-                    connection.send(**data)  # formats the dictionary into kwargs
+                    connection.communication.send(**data)  # formats the dictionary into kwargs
         else:
-            self.send(
+            self.communication.send(
                 type=MESSAGE,
                 emphasis="WARNING",
                 content="Client not authorised to send emphasis messages."
@@ -138,7 +83,7 @@ class Connection(threading.Thread):
                 json.dump(accounts, file)
             lock.release()
 
-            self.send(
+            self.communication.send(
                 type=MESSAGE,
                 emphasis="CONFIRMATION",
                 content="Display name changed to '%s'" % self.account["display"]
@@ -157,24 +102,24 @@ class Connection(threading.Thread):
                 self._update_profile_command(data)
 
             else:
-                self.send(
+                self.communication.send(
                     type=MESSAGE,
                     emphasis="WARNING",
                     content="Invalid communication"
                 )
 
         else:
-            self.send(
+            self.communication.send(
                 type=MESSAGE,
                 emphasis="WARNING",
                 content="Client not authenticated"
             )
-            self.send(type=DESIST_FROM_EXISTENCE)
+            self.communication.send(type=DESIST_FROM_EXISTENCE)
 
     def run(self):
         while self.running:
             try:
-                data = self.recv(1024)
+                data = self.communication.recv(1024)
 
                 if data is not None:
                     self.handle_data(data)

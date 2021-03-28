@@ -1,9 +1,8 @@
 import threading
 import socket
-import random
-import pickle
 import os
 import msvcrt
+import security
 
 
 encrypt = lambda a, b: b''.join([((x[0] + x[1]) % 255).to_bytes(1, "big") for x in zip(a, b)])
@@ -51,7 +50,7 @@ class Connection:
 
         self.credentials = credentials
 
-        self.active_packets = {}
+        self.communication = security.Communication(self.sock)
 
         self.input = True
         threading.Thread(target=self.input_loop).start()
@@ -70,65 +69,17 @@ class Connection:
                 elif inp[0] == "/":
                     if inp[:9] == "/username":
                         if inp[10:]:
-                            self.send(
+                            self.communication.send(
                                 type=UPDATE_PROFILE,
                                 display=inp[10:]
                             )
 
                 else:
-                    self.send(
+                    self.communication.send(
                         type=MESSAGE,
                         emphasis=None,  # used for formats (normally disallowed for clients)
                         content=inp
                     )
-
-    def send(self, **kwargs):
-        data = pickle.dumps(kwargs)
-
-        packet_key = random.randbytes(len(data))
-        packet_id = random.randbytes(2)
-        packet_state = b'\x00'
-
-        data = packet_state + packet_id + encrypt(data, packet_key)
-
-        self.active_packets[packet_id] = packet_key
-
-        self.sock.send(data)
-
-    def recv(self, data: bytes):
-        packet_state = data[0]
-        packet_id = data[1:3]
-        data = data[3:]
-
-        if packet_state == 1:
-            packet_key = self.active_packets[packet_id]
-
-            data = decrypt(data, packet_key)
-
-            data = b'\x02' + packet_id + data
-
-            del self.active_packets[packet_id]
-
-            self.sock.send(data)
-
-        elif packet_state == 3:
-            packet_key = random.randbytes(len(data))
-
-            data = encrypt(data, packet_key)
-            self.active_packets[packet_id] = packet_key
-
-            data = b'\x04' + packet_id + data
-
-            self.sock.send(data)
-
-        elif packet_state == 5:
-            packet_key = self.active_packets[packet_id]
-
-            data = decrypt(data, packet_key)
-
-            del self.active_packets[packet_id]
-
-            return data
 
     @staticmethod
     def forcefully_exit(exit_code: int = 0):
@@ -137,7 +88,7 @@ class Connection:
         # also don't use this ever ;)
 
     def run(self) -> None:
-        self.send(
+        self.communication.send(
             type=AUTHENTICATE,
             username=self.credentials[0],
             password=self.credentials[1]
@@ -145,12 +96,9 @@ class Connection:
 
         while True:
             try:
-                data = self.sock.recv(1024)
-                message = self.recv(data)
+                data = self.communication.recv(1024)
 
-                if message is not None:
-                    data = pickle.loads(message)
-
+                if data is not None:
                     if data["type"] == MESSAGE:
                         if data["emphasis"] is None:
                             print(data["username"] + " > " + data["content"])

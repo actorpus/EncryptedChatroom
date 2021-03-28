@@ -1,1 +1,14 @@
-{"alex": {"password": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8", "emphasis": false, "display": "actorpus", "name": "alex"}, "olly": {"password": "65e84be33532fb784c48129675f9eff3a682b27168c0ea744b2cf58ee02337c5", "emphasis": false, "display": "MonkeyBomb"}}
+{
+  "alex": {
+    "password": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+    "emphasis": false,
+    "display": "actorpus",
+    "name": "alex"
+  },
+  "olly": {
+    "password": "65e84be33532fb784c48129675f9eff3a682b27168c0ea744b2cf58ee02337c5",
+    "emphasis": false,
+    "display": "MonkeyBomb",
+    "name": "olly"
+  }
+}
