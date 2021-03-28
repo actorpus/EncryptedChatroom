@@ -5,7 +5,8 @@ import pickle
 import os
 
 
-xor_bytes = lambda a, b: b''.join([(x[0] ^ x[1]).to_bytes(1, "big") for x in zip(a, b)])
+encrypt = lambda a, b: b''.join([((x[0] + x[1]) % 255).to_bytes(1, "big") for x in zip(a, b)])
+decrypt = lambda a, b: b''.join([((x[0] - x[1]) % 255).to_bytes(1, "big") for x in zip(a, b)])
 
 
 class Connection:
@@ -34,19 +35,20 @@ class Connection:
                     except Exception as e:
                         print(e)
                 else:
-                    data = {
-                        "type": "message",
-                        "emphasis": None,  # used for server -> client 'warnings' (colours)
-                        "content": inp
-                    }
-                    self.send(pickle.dumps(data))
+                    self.send(
+                        type="message",
+                        emphasis=None,  # used for formats
+                        content=inp
+                    )
 
-    def send(self, data: bytes):
+    def send(self, **kwargs):
+        data = pickle.dumps(kwargs)
+
         packet_key = random.randbytes(len(data))
         packet_id = random.randbytes(2)
         packet_state = b'\x00'
 
-        data = packet_state + packet_id + xor_bytes(data, packet_key)
+        data = packet_state + packet_id + encrypt(data, packet_key)
 
         self.active_packets[packet_id] = packet_key
 
@@ -60,16 +62,18 @@ class Connection:
         if packet_state == 1:
             packet_key = self.active_packets[packet_id]
 
-            data = xor_bytes(data, packet_key)
+            data = decrypt(data, packet_key)
 
             data = b'\x02' + packet_id + data
+
+            del self.active_packets[packet_id]
 
             self.sock.send(data)
 
         elif packet_state == 3:
             packet_key = random.randbytes(len(data))
 
-            data = xor_bytes(data, packet_key)
+            data = encrypt(data, packet_key)
             self.active_packets[packet_id] = packet_key
 
             data = b'\x04' + packet_id + data
@@ -79,14 +83,24 @@ class Connection:
         elif packet_state == 5:
             packet_key = self.active_packets[packet_id]
 
-            data = xor_bytes(data, packet_key)
+            data = decrypt(data, packet_key)
 
             del self.active_packets[packet_id]
 
             return data
 
+    @staticmethod
+    def forcefully_exit(exit_code: int = 0):
+        os._exit(exit_code)
+        # ignore error its a protected function
+        # also don't use this ever ;)
+
     def run(self) -> None:
-        self.send(pickle.dumps({"type": "authenticate", "username": self.credentials[0], "password": self.credentials[1]}))
+        self.send(
+            type="authenticate",
+            username=self.credentials[0],
+            password=self.credentials[1]
+        )
 
         while True:
             try:
@@ -98,7 +112,7 @@ class Connection:
 
                     if data["type"] == "message":
                         if data["emphasis"] is None:
-                            print(data["content"])
+                            print(data["username"] + " > " + data["content"])
 
                         elif data["emphasis"] == "WARNING":
                             print("\033[31mWARNING: %s\033[0m" % data["content"])
@@ -108,15 +122,21 @@ class Connection:
 
                     elif data["type"] == "desist from existence":
                         if not self.ignore_desist_from_existence:
-                            os._exit(0)  # ignore error its a hidden function
-                            # also don't use this ever ;)
+                            self.forcefully_exit()
 
                     elif data["type"] == "authentication confirmation":
                         print("\033[34mClient authenticated\033[0m")
 
-            except ConnectionError as e:
-                print(e)
-                break
+            except KeyboardInterrupt:
+                print("Keyboard interrupt")
+                self.forcefully_exit()
+
+            except ConnectionResetError:
+                print("Lost connection to server")
+                self.forcefully_exit()
+
+os.system("color 4")  # initialise colour
+print("\033[0m", end="")  # reset color
 
 username = input("username > ")
 password = input("password > ")
