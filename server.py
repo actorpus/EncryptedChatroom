@@ -2,7 +2,9 @@ import socket
 import threading
 import json
 import hashlib
+from typing import *
 import security
+
 
 sha_hash = lambda data: hashlib.sha256(data.encode()).hexdigest()
 
@@ -31,7 +33,7 @@ class Connection(threading.Thread):
     def __init__(self, addresses):
         super().__init__()
         self.sock: socket.socket = addresses[0]
-        self.address: tuple[str, int] = addresses[1]
+        self.address: Tuple[str, int] = addresses[1]
 
         self.running = True
         self.authenticated = None
