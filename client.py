@@ -62,6 +62,7 @@ class Connection:
                         exec(inp[1:])
                     except Exception as e:
                         print(e)
+
                 elif inp[0] == "/":
                     if inp[:9] == "/username":
                         if inp[10:]:
@@ -120,10 +121,11 @@ class Connection:
                 print("Lost connection to server")
                 self.forcefully_exit()
 
+
 os.system("color 4")  # initialise colour (windows only)
 print("\033[0m", end="")  # reset color
 
 username = input("username > ")
-password = [silent_input, input]["PYTHONUNBUFFERED" in os.environ.keys()]("password > ")
+password = [silent_input, input]["`PYTHONUNBUFFERED`" in os.environ.keys()]("password > ")
 
-server = Connection(("127.0.0.1", 3952), (username, password))
+Connection(("127.0.0.1", 3952), (username, password))
