@@ -125,7 +125,8 @@ class Connection:
 os.system("color 4")  # initialise colour (windows only)
 print("\033[0m", end="")  # reset color
 
+ip_address = input("address > ")
 username = input("username > ")
 password = [silent_input, input]["`PYTHONUNBUFFERED`" in os.environ.keys()]("password > ")
 
-Connection(("127.0.0.1", 3952), (username, password))
+Connection((ip_address, 3952), (username, password))

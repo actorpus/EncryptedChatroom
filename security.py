@@ -16,10 +16,14 @@ class Communication:
     def decrypt(data, key):
         return b''.join([((x[0] - x[1]) % 255).to_bytes(1, "big") for x in zip(data, key)])
 
+    @staticmethod
+    def gen_key(length: int) -> bytes:
+        return b''.join([random.randint(0, 255).to_bytes(1, "big") for _ in range(length)])
+
     def send(self, **kwargs):
         data = pickle.dumps(kwargs)
 
-        packet_key = random.randbytes(len(data))
+        packet_key = self.gen_key(len(data))
         packet_id = random.randbytes(2)
         packet_state = b'\x00'
 
@@ -37,7 +41,7 @@ class Communication:
         data = data[3:]
 
         if packet_state == 0:
-            packet_key = random.randbytes(len(data))
+            packet_key = self.gen_key(len(data))
 
             data = self.encrypt(data, packet_key)
 

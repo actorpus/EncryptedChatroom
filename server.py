@@ -6,6 +6,9 @@ from typing import *
 import security
 
 
+print(socket.gethostbyname(socket.gethostname()))
+
+
 sha_hash = lambda data: hashlib.sha256(data.encode()).hexdigest()
 
 IP = ""
