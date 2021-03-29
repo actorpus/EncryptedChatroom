@@ -10,6 +10,7 @@ DESIST_FROM_EXISTENCE = 1
 AUTHENTICATE = 2
 AUTHENTICATION_CONFIRMATION = 3
 UPDATE_PROFILE = 4
+REQUEST_DATA = 5
 
 
 def silent_input(*args, fill="", end="\n"):
@@ -112,6 +113,9 @@ class Connection:
 
                     elif data["type"] == AUTHENTICATION_CONFIRMATION:
                         print("\033[34mClient authenticated\033[0m")
+
+                    elif data["type"] == REQUEST_DATA:
+                        print(data)
 
             except KeyboardInterrupt:
                 print("Keyboard interrupt")

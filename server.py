@@ -26,6 +26,7 @@ DESIST_FROM_EXISTENCE = 1
 AUTHENTICATE = 2
 AUTHENTICATION_CONFIRMATION = 3
 UPDATE_PROFILE = 4
+REQUEST_DATA = 5
 
 
 with open("users.json", "r") as f:
@@ -94,6 +95,12 @@ class Connection(threading.Thread):
                 content="Display name changed to '%s'" % self.account["display"]
             )
 
+    def _command_request_data(self, data):
+        if "display" in data.keys() and data["display"]:
+            data["display"] = self.account["display"]
+
+        self.communication.send(**data)
+
     def handle_data(self, data):
         command = data["type"]
         if command == AUTHENTICATE:
@@ -105,6 +112,9 @@ class Connection(threading.Thread):
 
             elif command == UPDATE_PROFILE:
                 self._update_profile_command(data)
+
+            elif command == REQUEST_DATA:
+                self._command_request_data(data)
 
             else:
                 self.communication.send(

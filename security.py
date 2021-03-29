@@ -24,7 +24,7 @@ class Communication:
         data = pickle.dumps(kwargs)
 
         packet_key = self.gen_key(len(data))
-        packet_id = random.randbytes(2)
+        packet_id = self.gen_key(2)
         packet_state = b'\x00'
 
         data = packet_state + packet_id + self.encrypt(data, packet_key)
