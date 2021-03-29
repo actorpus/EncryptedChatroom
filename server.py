@@ -84,16 +84,23 @@ class Connection(threading.Thread):
             self.account["display"] = data["display"]
             accounts[self.account["name"]]["display"] = data["display"]
 
-            lock.acquire()
-            with open("users.json", "w") as file:
-                json.dump(accounts, file)
-            lock.release()
+        elif "colour" in data.keys():
+            display_name = accounts[self.account["name"]]["display"]
+            if display_name[1] == "[":
+                display_name = display_name[5:-4]
 
-            self.communication.send(
-                type=MESSAGE,
-                emphasis="CONFIRMATION",
-                content="Display name changed to '%s'" % self.account["display"]
-            )
+            accounts[self.account["name"]]["display"] = data["colour"] + display_name + "\033[0m"
+
+        lock.acquire()
+        with open("users.json", "w") as file:
+            json.dump(accounts, file)
+        lock.release()
+
+        self.communication.send(
+            type=MESSAGE,
+            emphasis="CONFIRMATION",
+            content="Display name changed to \033[0m'%s'" % self.account["display"]
+        )
 
     def _command_request_data(self, data):
         if "display" in data.keys() and data["display"]:

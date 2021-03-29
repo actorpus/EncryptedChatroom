@@ -4,13 +4,22 @@ import os
 import msvcrt
 import security
 
-
 MESSAGE = 0
 DESIST_FROM_EXISTENCE = 1
 AUTHENTICATE = 2
 AUTHENTICATION_CONFIRMATION = 3
 UPDATE_PROFILE = 4
 REQUEST_DATA = 5
+
+default_colours = {
+    "red": "\033[31m",
+    "green": "\033[32m",
+    "yellow": "\033[33m",
+    "blue": "\033[34m",
+    "magenta": "\033[35m",
+    "cyan": "\033[36m",
+    "white": "\033[0m"
+}
 
 
 def silent_input(*args, fill="", end="\n"):
@@ -42,7 +51,7 @@ class Connection:
             self.sock.connect(address)
 
         except ConnectionRefusedError:
-            print("could not connect to server %s:%s" % address)
+            print("Could not connect to server %s:%s" % address)
             return
 
         self.credentials = credentials
@@ -69,11 +78,19 @@ class Connection:
                         if inp[10:]:
                             self.communication.send(
                                 type=UPDATE_PROFILE,
-                                display=inp[10:]
+                                display=inp[10:],
                             )
-
                     elif inp[:7] == "/colour":
-                        ...
+                        try:
+                            colour_change = default_colours[inp[8:].strip()]
+                            self.communication.send(
+                                type=UPDATE_PROFILE,
+                                colour=colour_change
+                            )
+                        except KeyError:
+                            print("Could not change text to " + inp[8:].strip() + ". \nChoose from:\n* " +
+                                  "\n* ".join([default_colours[colour] + colour + default_colours["white"] for colour in
+                                               default_colours.keys()]))
 
                 else:
                     self.communication.send(
@@ -85,7 +102,7 @@ class Connection:
     @staticmethod
     def forcefully_exit(exit_code: int = 0):
         os._exit(exit_code)
-        # ignore error its a protected function
+        # ignore error it's a protected function
         # also don't use this ever ;)
 
     def run(self) -> None:
