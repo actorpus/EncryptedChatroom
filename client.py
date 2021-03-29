@@ -72,6 +72,9 @@ class Connection:
                                 display=inp[10:]
                             )
 
+                    elif inp[:7] == "/colour":
+                        ...
+
                 else:
                     self.communication.send(
                         type=MESSAGE,
