@@ -149,6 +149,9 @@ class Connection:
 os.system("color 4")  # initialise colour (windows only)
 print("\033[0m", end="")  # reset color
 
+# os.system("start cmd /k client.py")  ## opens in cmd to add more flexibility into the program,
+# HOWEVER, it opens more than one window
+
 ip_address = input("address > ")
 username = input("username > ")
 password = [silent_input, input]["`PYTHONUNBUFFERED`" in os.environ.keys()]("password > ")
