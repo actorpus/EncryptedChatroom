@@ -4,5 +4,5 @@
 ## Communication states
 
 0. A -> B (encrypted by A)
-1. B -> A (encrypted by A and B)
+1. A <- B (encrypted by A and B)
 2. A -> B (encrypted by B)
