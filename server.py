@@ -5,9 +5,7 @@ import hashlib
 from typing import *
 import security
 
-
 print(socket.gethostbyname(socket.gethostname()))
-
 
 sha_hash = lambda data: hashlib.sha256(data.encode()).hexdigest()
 
@@ -27,7 +25,6 @@ AUTHENTICATE = 2
 AUTHENTICATION_CONFIRMATION = 3
 UPDATE_PROFILE = 4
 REQUEST_DATA = 5
-
 
 with open("users.json", "r") as f:
     accounts: dict = json.load(f)
@@ -70,8 +67,26 @@ class Connection(threading.Thread):
         if (data["emphasis"] is not None and self.account["emphasis"]) or data["emphasis"] is None:
             for connection in connections:  # forward message packet to all clients
                 if connection is not self:
-                    data["username"] = self.account["display"]
-                    connection.communication.send(**data)  # formats the dictionary into kwargs
+                    error = False
+                    data["username"] = connection.account["display"]
+                    if data["username"][1] == "[":
+                        data["username"] = data["username"][5:-4]
+
+                    string = data["content"]
+                    string = string.split(" ")
+
+                    for counter, word in enumerate(string):
+                        try:
+                            if word[0] == "@" and word[1:] == data["username"] and word.strip() != "@":
+                                string[counter] = "\033[46m" + word[1:] + "\033[0m"
+                        except IndexError:
+                            connection.communication.send("An error occurred.")
+                            error = True
+
+                    if not error:
+                        data["username"] = self.account["display"]
+                        data["content"] = " ".join(string)
+                        connection.communication.send(**data)  # formats the dictionary into kwargs
         else:
             self.communication.send(
                 type=MESSAGE,
