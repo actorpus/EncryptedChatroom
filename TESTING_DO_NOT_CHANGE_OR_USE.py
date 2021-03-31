@@ -298,9 +298,13 @@ def decrypt(data: bytes, key: bit128):
 
         for round_i in range(9):
             cypher.ixor(round_keys[8 - round_i])
+
             cypher.auto_mix_columns()
+
             cypher.auto_un_shift()
+
             cypher.auto_un_sub()
+
 
 encryption_key = bit128()
 encryption_key.fill_bytes(b'\x8f45r|\xab*\x953K\xf7\x90\x9b\x9f\xcc\x83')  # random data

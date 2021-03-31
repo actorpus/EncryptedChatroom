@@ -4,8 +4,11 @@ from typing import *
 
 
 class Communication:
-    def __init__(self, sock):
+    def __init__(self, sock, save_requests=True):
         self.active_packets = {}
+        self.save_requests = save_requests
+        if self.save_requests:
+            self.requested_data = {}
         self.sock = sock
 
     @staticmethod
@@ -20,7 +23,14 @@ class Communication:
     def gen_key(length: int) -> bytes:
         return b''.join([random.randint(0, 255).to_bytes(1, "big") for _ in range(length)])
 
-    def send(self, **kwargs):
+    def send(self, type, **kwargs):
+        if self.save_requests:
+            if type == 5:
+                for key in kwargs.keys():
+                    self.requested_data[key] = False
+
+        kwargs["type"] = type
+
         data = pickle.dumps(kwargs)
 
         packet_key = self.gen_key(len(data))
@@ -71,4 +81,15 @@ class Communication:
 
             ret: dict = pickle.loads(data)
 
+            if self.save_requests:
+                if ret["type"] == 5:
+                    for key in ret:
+                        if key != "type":
+                            self.requested_data[key] = ret[key]
+
             return ret
+
+    def get_requested_data(self):
+        for key in self.requested_data:
+            if not self.requested_data is None:
+                return key, self.requested_data[key]

@@ -40,7 +40,7 @@ class Connection(threading.Thread):
         self.authenticated = None
         self.account = {}
 
-        self.communication = security.Communication(self.sock)
+        self.communication = security.Communication(self.sock, False)
 
         lock.acquire()
         connections.append(self)
