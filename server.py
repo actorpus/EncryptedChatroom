@@ -48,7 +48,13 @@ class Connection(threading.Thread):
 
         self.start()
 
-    def _command_authenticate(self, data):
+    def _command_authenticate(self, data) -> None:
+        """
+        Authenticates the user, if authenticated allows user to continue using the chatroom, otherwise terminates the
+        unauthorised user.
+        :param dictionary data: The data.
+        :return: Returns a message back to the client, telling it what to do.
+        """
         if data["username"] in accounts.keys() and sha_hash(data["password"]) == accounts[data["username"]]["password"]:
             self.authenticated = True
             self.account: dict = accounts[data["username"]]
@@ -64,6 +70,11 @@ class Connection(threading.Thread):
             self.communication.send(type=DESIST_FROM_EXISTENCE)
 
     def _command_message(self, data):
+        """
+        Handles messages being passed back and forth between user.
+        :param dictionary data: The data.
+        :return:
+        """
         if (data["emphasis"] is not None and self.account["emphasis"]) or data["emphasis"] is None:
             for connection in connections:  # forward message packet to all clients
                 if connection is not self:
@@ -101,7 +112,12 @@ class Connection(threading.Thread):
                 content="Client not authorised to send emphasis messages."
             )
 
-    def _update_profile_command(self, data):
+    def _update_profile_command(self, data) -> None:
+        """
+        Handles a user updating their profile.
+        :param dictionary data: The data
+        :return: What their account has been changed to.
+        """
         if "display" in data.keys():
             self.account["display"] = data["display"]
             accounts[self.account["name"]]["display"] = data["display"]
@@ -124,7 +140,12 @@ class Connection(threading.Thread):
             content="Display name changed to \033[0m'%s'" % self.account["display"]
         )
 
-    def _command_request_data(self, data):
+    def _command_request_data(self, data) -> None:
+        """
+        A command for requesting data.
+        :param dictionary data: The data
+        :return: None
+        """
         if "display" in data.keys() and data["display"]:
             data["display"] = self.account["display"]
 
@@ -160,7 +181,11 @@ class Connection(threading.Thread):
             )
             self.communication.send(type=DESIST_FROM_EXISTENCE)
 
-    def run(self):
+    def run(self) -> None:
+        """
+        Runs the server.
+        :return: Returns handled data.
+        """
         while self.running:
             try:
                 data = self.communication.recv(1024)

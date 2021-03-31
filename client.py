@@ -4,6 +4,7 @@ import os
 import msvcrt
 import security
 import ctypes
+import time
 
 MESSAGE = 0
 DESIST_FROM_EXISTENCE = 1
@@ -27,6 +28,13 @@ default_colours = {
 
 
 def silent_input(*args, fill="", end="\n"):
+    """
+    Creates an input option which allows users to hide their password from watchful eyes - password security.
+    :param Tuple[Any] args: The argument
+    :param str fill:
+    :param str end:
+    :return:
+    """
     print(*args, end="", flush=True)
 
     static = ''
@@ -67,7 +75,11 @@ class Connection:
 
         self.run()
 
-    def input_loop(self):
+    def input_loop(self) -> None:
+        """
+        A threaded method which allows the client to send packets of each key press to the server.
+        :return: Once the server has understood and sent back a message, something occurs depending on user input.
+        """
         while self.input:
             inp = input()
             if inp:
@@ -97,13 +109,16 @@ class Connection:
                                                default_colours.keys()]))
 
                     elif inp[:5] == "/quit":
+                        print("Goodbye")
+                        time.sleep(1.5)
                         self.forcefully_exit()
 
                     elif inp[:5] == "/help":
                         print("""
 All available commands:
 \t\\help\t\t-\tBrings up a list of all commands.
-\t\\colour\t\t-\tChanges the colour of the messages you receive. You can choose from RGB to CYM(K) colours.
+\t\\colour\t\t-\tChanges the colour of the messages you receive.
+\t\t\t\tYou can choose from RGB to CYM(K) colours.
 \t\\quit\t\t-\tTerminates your connection with the server.
 """)
 
@@ -115,12 +130,23 @@ All available commands:
                     )
 
     @staticmethod
-    def forcefully_exit(exit_code: int = 0):
+    def forcefully_exit(exit_code: int = 0) -> None:
+        """
+        Terminates all threads and connections.
+        :param int exit_code: The exit code .
+        :return: None.
+        """
+        print("\033[31mYou have been kicked from the server...\033[0m")
+        time.sleep(1)
         os._exit(exit_code)
         # ignore error it's a protected function
         # also don't use this ever ;)
 
     def run(self) -> None:
+        """
+        Runs the client, and handles their inputs.
+        :return: None.
+        """
         self.communication.send(
             type=AUTHENTICATE,
             username=self.credentials[0],
