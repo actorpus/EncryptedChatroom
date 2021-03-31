@@ -3,6 +3,7 @@ import socket
 import os
 import msvcrt
 import security
+import ctypes
 
 MESSAGE = 0
 DESIST_FROM_EXISTENCE = 1
@@ -10,6 +11,9 @@ AUTHENTICATE = 2
 AUTHENTICATION_CONFIRMATION = 3
 UPDATE_PROFILE = 4
 REQUEST_DATA = 5
+
+SetCursorPos = ctypes.windll.user32.SetCursorPos
+mouse_event = ctypes.windll.user32.mouse_event
 
 default_colours = {
     "red": "\033[31m",
@@ -91,6 +95,17 @@ class Connection:
                             print("Could not change text to " + inp[8:].strip() + ". \nChoose from:\n* " +
                                   "\n* ".join([default_colours[colour] + colour + default_colours["white"] for colour in
                                                default_colours.keys()]))
+
+                    elif inp[:5] == "/quit":
+                        self.forcefully_exit()
+
+                    elif inp[:5] == "/help":
+                        print("""
+All available commands:
+\t\\help\t\t-\tBrings up a list of all commands.
+\t\\colour\t\t-\tChanges the colour of the messages you receive. You can choose from RGB to CYM(K) colours.
+\t\\quit\t\t-\tTerminates your connection with the server.
+""")
 
                 else:
                     self.communication.send(

@@ -77,11 +77,18 @@ class Connection(threading.Thread):
 
                     for counter, word in enumerate(string):
                         try:
-                            if word[0] == "@" and word[1:] == data["username"] and word.strip() != "@":
+                            if word[0] == "@" and word[1:] == data["username"]:
                                 string[counter] = "\033[46m" + word[1:] + "\033[0m"
                         except IndexError:
-                            connection.communication.send("An error occurred.")
+                            self.communication.send(
+                                type=MESSAGE,
+                                emphasis="WARNING",
+                                content="An error occurred."
+                            )
                             error = True
+
+                    if error:
+                        break
 
                     if not error:
                         data["username"] = self.account["display"]
