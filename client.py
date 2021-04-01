@@ -26,6 +26,16 @@ default_colours = {
     "white": "\033[0m"
 }
 
+WELCOME = """\033[32mServer V2.2.0\033[31m
+__        _______ _     ____ ___  __  __ _____  
+\\ \\      / / ____| |   / ___/ _ \\|  \\/  | ____| 
+ \\ \\ /\\ / /|  _| | |  | |  | | | | |\\/| |  _|
+  \\ V  V / | |___| |__| |__| |_| | |  | | |___  
+   \\_/\\_/  |_____|_____\\____\\___/|_|  |_|_____|\033[36m
+Welcome to an open chatroom local to you, with encryption between each of your messages!
+Type '/help' for more features in this chatroom.\033[0m
+"""
+
 
 def silent_input(*args, fill="", end="\n"):
     """
@@ -162,6 +172,8 @@ All available commands:
             username=self.credentials[0],
             password=self.credentials[1]
         )
+
+        print(WELCOME)
 
         while True:
             try:
