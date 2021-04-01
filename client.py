@@ -108,25 +108,35 @@ class Connection:
                                   "\n* ".join([default_colours[colour] + colour + default_colours["white"] for colour in
                                                default_colours.keys()]))
 
-                    elif inp[:5] == "/quit":
+                    elif inp.strip() == "/quit":
                         print("Goodbye")
                         time.sleep(1.5)
                         self.forcefully_exit()
 
-                    elif inp[:5] == "/help":
+                    elif inp.strip() == "/help":
                         print("""
 All available commands:
 \t\\help\t\t-\tBrings up a list of all commands.
 \t\\colour\t\t-\tChanges the colour of the messages you receive.
 \t\t\t\tYou can choose from RGB to CYM(K) colours.
 \t\\quit\t\t-\tTerminates your connection with the server.
+\t\\:thumbs up:\t\t-\t Displays an ascii art of a thumbs up - created by 'ChTrSrFr'
 """)
+
+                elif ":thumbs up:" in inp:
+                    self.communication.send(
+                        type=MESSAGE,
+                        emphasis=None,
+                        content=inp,
+                        ascii_art=True
+                    )
 
                 else:
                     self.communication.send(
                         type=MESSAGE,
                         emphasis=None,  # used for formats (normally disallowed for clients)
-                        content=inp
+                        content=inp,
+                        ascii_art=False
                     )
 
     @staticmethod

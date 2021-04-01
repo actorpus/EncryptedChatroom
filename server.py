@@ -26,6 +26,19 @@ AUTHENTICATION_CONFIRMATION = 3
 UPDATE_PROFILE = 4
 REQUEST_DATA = 5
 
+ascii_art = {
+    "thumbs_up": """
+\n  _
+ ( ((
+  \ =\\
+ __\_ `-\\
+(____))(  \\----
+(____)) _  
+(____))
+(____))____/----\n
+"""
+}
+
 with open("users.json", "r") as f:
     accounts: dict = json.load(f)
 
@@ -83,28 +96,34 @@ class Connection(threading.Thread):
                     if data["username"][1] == "[":
                         data["username"] = data["username"][5:-4]
 
-                    string = data["content"]
-                    string = string.split(" ")
+                    if data["ascii_art"]:
+                        data["content"] = data["content"].replace(":thumbs up:", ascii_art["thumbs_up"])
 
-                    for counter, word in enumerate(string):
-                        try:
-                            if word[0] == "@" and word[1:] == data["username"]:
-                                string[counter] = "\033[46m" + word[1:] + "\033[0m"
-                        except IndexError:
-                            self.communication.send(
-                                type=MESSAGE,
-                                emphasis="WARNING",
-                                content="An error occurred."
-                            )
-                            error = True
+                    if "@" in data["content"]:
+                        string = data["content"]
+                        string = string.split(" ")
+
+                        for counter, word in enumerate(string):
+                            try:
+                                if word[0] == "@" and word[1:] == data["username"]:
+                                    string[counter] = "\033[46m" + word[1:] + "\033[0m"
+                            except IndexError:
+                                self.communication.send(
+                                    type=MESSAGE,
+                                    emphasis="WARNING",
+                                    content="An error occurred."
+                                )
+                                error = True
+
+                        data["content"] = " ".join(string)
 
                     if error:
                         break
 
                     if not error:
                         data["username"] = self.account["display"]
-                        data["content"] = " ".join(string)
                         connection.communication.send(**data)  # formats the dictionary into kwargs
+
         else:
             self.communication.send(
                 type=MESSAGE,
