@@ -36,6 +36,25 @@ ascii_art = {
 (____)) _  
 (____))
 (____))____/----\n
+""",
+    "thumbs_down": """
+\n  _______
+(( ____   \\--
+(( _____
+((_____
+((____   -----
+      /  /
+     (_(( \n
+""",
+    "smile": """
+\n     ..::''''::..
+   .;''        ``;.
+  ::    ::  ::    ::
+ ::     ::  ::     ::
+ ::     ::  ::     ::
+  ::  :.      .:  ::
+   `;..``::::''..;'
+     ``::,,,,::''\n
 """
 }
 
@@ -98,6 +117,8 @@ class Connection(threading.Thread):
 
                     if data["ascii_art"]:
                         data["content"] = data["content"].replace(":thumbs up:", ascii_art["thumbs_up"])
+                        data["content"] = data["content"].replace(":thumbs down:", ascii_art["thumbs_down"])
+                        data["content"] = data["content"].replace(":smile:", ascii_art["smile"])
 
                     if "@" in data["content"]:
                         string = data["content"]

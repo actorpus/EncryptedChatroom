@@ -130,10 +130,12 @@ All available commands:
 \t\\colour\t\t-\tChanges the colour of the messages you receive.
 \t\t\t\tYou can choose from RGB to CYM(K) colours.
 \t\\quit\t\t-\tTerminates your connection with the server.
-\t\\:thumbs up:\t\t-\t Displays an ascii art of a thumbs up - created by 'ChTrSrFr'
+\t:thumbs up:\t-\tDisplays an ascii art of a thumbs up for other users.
+\t:thumbs down:\t-\tDisplays an ascii art of a thumbs down for other users.
+\t:smile:\t\t-\tDisplays a smiley face for other users.
 """)
 
-                elif ":thumbs up:" in inp:
+                elif ":thumbs up:" in inp or ":thumbs down:" in inp or ":smile:" in inp:
                     self.communication.send(
                         type=MESSAGE,
                         emphasis=None,
