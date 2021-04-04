@@ -44,7 +44,7 @@ class Communication:
         self.sock.send(data)
 
     def recv(self, buffer_size) -> Union[None, dict]:
-        data = self.sock.recv(buffer_size)
+        data = self.sock.receive(buffer_size)
 
         packet_state = data[0]
         packet_id = data[1:3]

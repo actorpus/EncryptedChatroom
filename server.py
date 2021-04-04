@@ -35,7 +35,8 @@ ascii_art = {
 (____))(  \\----
 (____)) _  
 (____))
-(____))____/----\n
+(____))____/----
+
 """,
     "thumbs_down": """
 \n  _______
@@ -44,7 +45,8 @@ ascii_art = {
 ((_____
 ((____   -----
       /  /
-     (_(( \n
+     (_(( 
+
 """,
     "smile": """
 \n     ..::''''::..
@@ -54,7 +56,8 @@ ascii_art = {
  ::     ::  ::     ::
   ::  :.      .:  ::
    `;..``::::''..;'
-     ``::,,,,::''\n
+     ``::,,,,::''
+
 """
 }
 
@@ -72,7 +75,7 @@ class Connection(threading.Thread):
         self.authenticated = None
         self.account = {}
 
-        self.communication = security.Communication(self.sock, False)
+        self.communication = security.Communication(self.sock)
 
         lock.acquire()
         connections.append(self)
