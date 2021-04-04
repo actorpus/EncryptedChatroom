@@ -3,6 +3,12 @@ STILL EXPERIMENTAL
 
 * add saving and loading of keys to reduce startup time on frequent loads
   * add database for Server with stored key's and respective expiry dates
+
+credit:
+actorpus#8534
+
+warning:
+legally unverified; do not use for anything confidential.
 """
 
 import random
