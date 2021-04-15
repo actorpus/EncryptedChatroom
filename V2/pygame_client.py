@@ -48,7 +48,7 @@ class main:
         self.display = pygame.display.set_mode((400, 400), pygame.RESIZABLE | pygame.DOUBLEBUF)
         self.clock = pygame.time.Clock()
 
-        self.font = pygame.font.SysFont(pygame.font.get_default_font(), 30)
+        self.font = pygame.font.SysFont(pygame.font.get_default_font(), 20)
         self.detail_font = pygame.font.SysFont(pygame.font.get_default_font(), 15)
 
         self.entry_box = ""

@@ -569,35 +569,35 @@ class AES128:
 
 
 class RSA:
-    @staticmethod
-    def power_mod(number: int, power: int, mod: int, render: bool = False, render_number: int = None) -> int:
-        if render and render_number is None:
-            raise ValueError("render option requires render_number.")
-
-        if mod == 1:
-            return 0
-
-        else:
-            if render:
-                _check = power // 100
-                render_number = str(render_number).rjust(2, " ")
-
-                print("\r%s/16: [%s]" % (render_number, "-" * 100), end="")
-                i = 1
-                for _ in range(power):
-                    if _ % _check == 0:
-                        print("\r%s/16: [%s]" % (render_number, "=" * int(100 * (_ / power)) + "-" * (100 - int(100 * (_ / power)))), end="")
-                    i *= number
-                    i %= mod
-                print("\r%s/16: [%s]" % (render_number, "=" * 100), end="")
-
-            else:  # using duplicate to remove if overhead
-                i = 1
-                for _ in range(power):
-                    i *= number
-                    i %= mod
-
-            return i
+    # @staticmethod  # NOTE: builtin pow()
+    # def power_mod(number: int, power: int, mod: int, render: bool = False, render_number: int = None) -> int:
+    #     if render and render_number is None:
+    #         raise ValueError("render option requires render_number.")
+    #
+    #     if mod == 1:
+    #         return 0
+    #
+    #     else:
+    #         if render:
+    #             _check = power // 100
+    #             render_number = str(render_number).rjust(2, " ")
+    #
+    #             print("\r%s/16: [%s]" % (render_number, "-" * 100), end="")
+    #             i = 1
+    #             for _ in range(power):
+    #                 if _ % _check == 0:
+    #                     print("\r%s/16: [%s]" % (render_number, "=" * int(100 * (_ / power)) + "-" * (100 - int(100 * (_ / power)))), end="")
+    #                 i *= number
+    #                 i %= mod
+    #             print("\r%s/16: [%s]" % (render_number, "=" * 100), end="")
+    #
+    #         else:  # using duplicate to remove if overhead
+    #             i = 1
+    #             for _ in range(power):
+    #                 i *= number
+    #                 i %= mod
+    #
+    #         return i
 
     @staticmethod
     def gcd(a: int, b: int) -> int:
@@ -637,8 +637,8 @@ class RSA:
 
     @staticmethod
     def generate_keys() -> Tuple[Tuple[int, int], int]:
-        p = random.choice(LookupTables.primes[500:1000])
-        q = random.choice(LookupTables.primes[500:1000])  # can be increased up to 100000 for more security (exponentially slower)
+        p = random.choice(LookupTables.primes[1000:100000])
+        q = random.choice(LookupTables.primes[1000:100000])  # can be increased up to 100000 for more security (exponentially slower)
 
         e = RSA.relatively_prime_to(p, q)  # (p - 1) * (q - 1) no factors with e (bar 1) ( λ(n) )
         n = p * q
@@ -649,11 +649,15 @@ class RSA:
 
     @staticmethod
     def encrypt(public_key: Tuple[int, int], data: bytes) -> list:
-        return [RSA.power_mod(_, public_key[0], public_key[1]) for _ in data]
+        return [pow(_, public_key[0], public_key[1]) for _ in data]
 
     @staticmethod
     def decrypt(public_key: Tuple[int, int], private_key: int, data: bytes) -> bytes:
-        return b''.join([_.to_bytes(1, "big") for _ in [RSA.power_mod(_, private_key, public_key[1], render=True, render_number=i + 1) for i, _ in enumerate(data)]])
+        return b''.join([_.to_bytes(1, "big") for _ in [pow(_, private_key, public_key[1]) for _ in data]])
+
+    @staticmethod
+    def raw_decrypt(public_key: Tuple[int, int], private_key: int, data: any) -> bytes:
+        return b''.join([_.to_bytes(1, "big") for _ in [pow(_, private_key, public_key[1]) for _ in data]])
 
 
 class Errors:

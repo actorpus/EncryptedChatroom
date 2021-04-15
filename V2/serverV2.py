@@ -6,6 +6,7 @@ import SecurityV2
 import threading
 import logging
 import socket
+import random
 
 logging.basicConfig(filename="test.log", level=logging.INFO, format="%(levelname)s@%(name)s:%(message)s")
 
@@ -98,6 +99,26 @@ class WebServerRedirect(threading.Thread):
             c.close()
 
 
+class InputLoop(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+        self.start()
+
+    def run(self) -> None:
+        while True:
+            i = input()
+
+            if i == "create user":
+                uuid = hex(random.getrandbits(24))[2:].upper().rjust(6, "0")
+                pas = input("uuid > %s\npass > " % uuid)
+
+                lock.acquire()
+                users[uuid] = {"pass": pas}
+                lock.release()
+
+                print(users)
+
 connections = []
 lock = threading.Lock()
 
@@ -107,6 +128,7 @@ server = SecurityV2.SecureSocketWrapper.Server(ADDRESS)
 logging.info("Created socket ADDRESS:%s" % str(ADDRESS))
 
 WebServerRedirect()
+InputLoop()
 
 while True:
     c = server.accept()

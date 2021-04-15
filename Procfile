@@ -1,0 +1,1 @@
+worker: python V2/serverV2.py
