@@ -7,15 +7,13 @@ import threading
 import logging
 import socket
 import random
+import json
 
 logging.basicConfig(filename="test.log", level=logging.INFO, format="%(levelname)s@%(name)s:%(message)s")
 
 
-users = {  # temporary
-    "AE12F0": {
-        "pass": "password"
-    }
-}
+with open("User_settings.json", "r") as file:
+    users: dict = json.load(file)
 
 
 class connection(threading.Thread):
@@ -115,9 +113,9 @@ class InputLoop(threading.Thread):
 
                 lock.acquire()
                 users[uuid] = {"pass": pas}
+                with open("User_settings.json", "w") as file:
+                    json.dump(users, file)
                 lock.release()
-
-                print(users)
 
 connections = []
 lock = threading.Lock()
